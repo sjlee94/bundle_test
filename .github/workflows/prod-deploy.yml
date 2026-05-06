@@ -1,0 +1,33 @@
+name: Prod deployment
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-prod:
+    name: Deploy bundle to PROD
+    runs-on: ubuntu-latest
+    environment: production    # 수동 승인 게이트 (4.4에서 설정)
+    
+    # 1. 운영 Workspace에서 설정한 SP의 코드값 반영
+    # 2. github 내에서 github action에 추가(Repository secrets)
+    env:
+      DATABRICKS_HOST:          ${{ secrets.DATABRICKS_HOST_PROD }}
+      DATABRICKS_CLIENT_ID:     ${{ secrets.DATABRICKS_CLIENT_ID_PROD }}
+      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET_PROD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: databricks/setup-cli@main
+
+      - name: Validate bundle
+        run: databricks bundle validate -t prod
+
+      - name: Deploy bundle to prod
+        run: databricks bundle deploy -t prod

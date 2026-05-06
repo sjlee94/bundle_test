@@ -8,7 +8,7 @@ resources:
           environment_key: Default
           run_if: ALL_SUCCESS
           spark_python_task:
-            python_file: /Workspace/itohub_stage/51_bidw_dev/py/PEC_TABLE_TXN_1.py
+            python_file: ${var.py_path_prefix}/PEC_TABLE_TXN_1.py
           timeout_seconds: 0
       email_notifications:
         no_alert_for_skipped_runs: false
