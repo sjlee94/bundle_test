@@ -109,8 +109,10 @@ targets:
 
     # Job을 실행할 계정 지정
     run_as:
-      # 서비스 계정(SP)으로 Job 실행
-      # → 사람 계정과 분리되어 퇴사·휴가 영향 없이 안정적으로 운영됨
+      # 운영 환경의 서비스 계정(SP)으로 Job 실행
+      # → 사람 계정과 분리되어 롤인아웃 영향 없이 안정적으로 운영됨
       # → 감사 로그가 일관되게 기록됨
       # → 권한 최소화 가능 (SP에는 운영에 필요한 권한만 부여)
-      service_principal_name: Prod-Bidw-Poc-1
+      # → git action 활용 시 SP 명칭 대신 Application ID로 입력 필요
+      # service_principal_name: Prod-Bidw-Poc-1
+      service_principal_name: 651e8177-236f-4209-a6e6-e4fd3195c88b
