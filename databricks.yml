@@ -1,7 +1,7 @@
 # Declarative Automation Bundle configuration, more info here: https://docs.databricks.com/en/dev-tools/bundles/settings.html
 bundle:
   # 번들 이름 (Workspace에서 해당 이름으로 폴더 생성됨. 배포 시 식별자로 사용)
-  name: "Bundle_Test_Databricks_Yaml"
+  name: "Bundle_Test_Yaml"
 
 # 다른 YAML 파일 자동 포함
 # → resources 폴더 안의 모든 yml 파일을 가져와서 합침
@@ -39,15 +39,20 @@ targets:
     # → 스케줄이 자동 OFF (실수로 dev에서 정기 실행되는 사고 방지)
     # → 코드 수정 후 저장만 해도 다음 실행에 바로 반영됨 (매번 deploy 안 해도 됨)
     mode: development
+    # presets 설정 시 Job 이름 앞에 원하는 명칭으로 설정 가능
+    presets:
+      name_prefix: "[DEV ${workspace.current_user.short_name}] "
 
-    # 이 환경을 기본값으로 사용
-    # → CLI에서 -t 옵션 없이 deploy 하면 자동으로 dev로 배포됨
+    # 이 환경(dev)을 기본값으로 사용
+    # → CLI에서 -t 옵션 없이 deploy 하면 자동으로 dev 환경으로 배포하도록 설정
     default: true
 
-    # 이 환경에서만 쓸 변수
+    # 이 환경(dev)에서만 쓸 변수
     variables:
       # Python 스크립트가 모여 있는 폴더 경로
       # → Job 정의에서 ${var.py_path_prefix} 로 가져다 씀
+      # → bundle 외부 경로인 경우 절대 경로 가능하나, 내부 경로인 경우는 변수 사용 시 상대 경로로만 가능
+      # → Ex. Job Yml 설정 시 ../src/{python_script.py}
       py_path_prefix: /Workspace/itohub_stage/51_bidw_dev/bundle_test/src
 
     workspace:
@@ -90,14 +95,14 @@ targets:
       # 이 환경에서 배포되는 모든 리소스에 자동으로 붙는 태그
       # → 비용 추적, 리소스 식별, 권한 관리 등에 활용
       tags:
-        project: 51_bidw_poc
+        project: 51_bidw_prd_poc
 
     # 운영 환경 전용 변수 (상단 default 값 덮어씀)
     variables:
       # 운영 Python 스크립트 경로 (dev와 다른 위치)
-      # → dev: /itohub_stage/51_bidw_dev/py
-      # → prod: /itohub/51_bidw_dev/py
-      py_path_prefix: /Workspace/itohub/51_bidw_dev/py
+      # → dev: /itohub_stage/51_bidw_dev/bundle_test/src
+      # → prod: /itohub_stage/51_bidw_prd/bundle_test/src
+      py_path_prefix: /Workspace/itohub/51_bidw_prd/bundle_test/src
 
     workspace:
       # 운영 Databricks 워크스페이스 주소
@@ -105,7 +110,7 @@ targets:
 
       # 배포된 파일이 저장될 운영 폴더
       # → 운영도 사용자별로 분리되지만, 실제로는 SP가 배포하므로 단일 위치로 모임
-      root_path: /Workspace/itohub/51_bidw_poc/dab_deploy/${bundle.target}/${bundle.name}/${workspace.current_user.userName}
+      root_path: /Workspace/itohub/51_bidw_prd/dab_deploy/${bundle.target}/${bundle.name}/${workspace.current_user.userName}
 
     # Job을 실행할 계정 지정
     run_as:

@@ -1,14 +1,15 @@
 resources:
   jobs:
-    wf_test:
-      name: WF_TEST
+    jb_test_1:
+      name: JB_TEST_1
       tasks:
-        - task_key: Task_A
+        - task_key: TASK_TEST_1
+          disabled: false
           email_notifications: {}
           environment_key: Default
           run_if: ALL_SUCCESS
           spark_python_task:
-            python_file: ${var.py_path_prefix}/PEC_TABLE_TXN_1.py
+            python_file: /Workspace/itohub_stage/51_bidw_dev/dab_work/bundle_test/src/PEC_TABLE_TXN_1.py
           timeout_seconds: 0
       email_notifications:
         no_alert_for_skipped_runs: false
