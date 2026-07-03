@@ -1,0 +1,25 @@
+resources:
+  jobs:
+    jb_test_2:
+      name: JB_TEST_2
+      tasks:
+        - task_key: TASK_TEST_2
+          disabled: false
+          email_notifications: {}
+          environment_key: Default
+          run_if: ALL_SUCCESS
+          spark_python_task:
+            python_file: /Workspace/itohub_stage/51_bidw_dev/dab_work/bundle_test/src/PEC_TABLE_TXN2_1.py
+          timeout_seconds: 0
+      email_notifications:
+        no_alert_for_skipped_runs: false
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      max_concurrent_runs: 1
+      performance_target: PERFORMANCE_OPTIMIZED
+      queue:
+        enabled: true
+      timeout_seconds: 0
+      webhook_notifications: {}
