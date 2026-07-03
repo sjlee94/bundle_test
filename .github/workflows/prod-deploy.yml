@@ -1,36 +1,45 @@
+# 워크플로 이름 (GitHub Actions 화면에 표시됨)
 name: Prod deployment
 
+# 언제 이 워크플로를 실행할지 정의
 on:
   push:
     branches:
-      - main
+      - main          # main 브랜치에 push될 때만 실행 (= PR 머지 시)
 
+# 동시 실행 제어
+# → 같은 그룹 이름의 워크플로가 중복 실행되지 않도록 직렬화
 concurrency:
   group: prod-deploy
-  cancel-in-progress: false
+  cancel-in-progress: false   # 진행 중인 배포는 취소하지 않음 (운영 안정성)
 
 jobs:
   deploy-prod:
     name: Deploy bundle to PROD
-    runs-on: ubuntu-latest
-    environment: production    # 수동 승인 게이트 (4.4에서 설정)
-    defaults:
-      run:
-        working-directory: bundle
-    
-    # 1. 운영 Workspace에서 설정한 SP의 코드값 반영
-    # 2. github 내에서 github action에 추가(Repository secrets)
+    runs-on: ubuntu-latest    # GitHub이 제공하는 가상 서버에서 실행
+
+    # 4.4에서 설정할 production 환경 — 수동 승인 게이트 연결
+    environment: production
+
+    # Databricks CLI가 인식하는 환경 변수
+    # → ${{ secrets.이름 }} 으로 GitHub Secrets에 저장된 값을 가져옴
+    # → 4.2에서 등록한 Secret 이름과 정확히 일치해야 함
     env:
       DATABRICKS_HOST:          ${{ secrets.DATABRICKS_HOST_PROD }}
       DATABRICKS_CLIENT_ID:     ${{ secrets.DATABRICKS_CLIENT_ID_PROD }}
       DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET_PROD }}
+
     steps:
+      # GitHub repo 코드를 가상 서버로 받아오기
       - uses: actions/checkout@v4
 
+      # Databricks CLI 설치
       - uses: databricks/setup-cli@main
 
+      # YAML 문법 및 설정 검증 (실제 배포 전 안전 체크)
       - name: Validate bundle
         run: databricks bundle validate -t prod
 
+      # Prod 워크스페이스로 실제 배포
       - name: Deploy bundle to prod
         run: databricks bundle deploy -t prod

@@ -1,9 +1,9 @@
 resources:
   jobs:
-    새_작업_2026년_5월_11일_오후_01_55:
-      name: 새 작업 2026년 5월 11일 오후 01:55
+    jb_test_1:
+      name: JB_TEST_1
       tasks:
-        - task_key: job_11
+        - task_key: TASK_TEST_1
           disabled: false
           email_notifications: {}
           environment_key: Default
