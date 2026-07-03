@@ -90,5 +90,6 @@ except Exception as e:
     sys.exit(1)
 
 # 260701 주석 추가(테스트)
+# 260703 주석 추가(테스트)
 finally:
     logging.info("=== Job End ===")
