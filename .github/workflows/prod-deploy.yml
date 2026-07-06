@@ -36,10 +36,81 @@ jobs:
       # Databricks CLI 설치
       - uses: databricks/setup-cli@main
 
-      # YAML 문법 및 설정 검증 (실제 배포 전 안전 체크)
-      - name: Validate bundle
-        run: databricks bundle validate -t prod
+      # 1. 기존 단순 배포
+      # # YAML 문법 및 설정 검증 (실제 배포 전 안전 체크)
+      # - name: Validate bundle
+      #   run: databricks bundle validate -t prod
 
-      # Prod 워크스페이스로 실제 배포
+      # # Prod 워크스페이스로 실제 배포
+      # - name: Deploy bundle to prod
+      #   run: databricks bundle deploy -t prod
+
+      # 2. 배포 + 파일별 업로드/스킵 여부를 명시적으로 출력
       - name: Deploy bundle to prod
-        run: databricks bundle deploy -t prod
+        run: |
+          # --debug: 파일별 uploading/skipping 명시 로그를 stderr로 출력
+          # 2>&1: stderr를 stdout으로 합쳐서 함께 캡처
+          # tee deploy.log: 화면에 출력하면서 동시에 deploy.log 파일에 저장
+          databricks bundle deploy -t prod --debug 2>&1 | tee deploy.log
+
+          # 빈 줄 (가독성을 위한 구분선)
+          echo ""
+
+          # 실제 업로드된 파일 목록 요약
+          # grep -i "uploading": 대소문자 무시하고 "uploading" 포함 라인 추출
+          # || echo "...": grep 결과가 없으면(업로드 파일 0개) 대체 메시지 출력
+          echo "=== 📤 Uploaded files ==="
+          grep -i "uploading" deploy.log || echo "  (no file uploads)"
+
+          echo ""
+
+          # 스킵된 파일 개수 카운트
+          # grep -ic: 대소문자 무시(-i)하고 매칭된 라인 개수만 반환(-c)
+          # || echo "  0": grep 실패 시 0으로 표시
+          echo "=== ⏭️ Skipped files (unchanged) ==="
+          grep -ic "skipping" deploy.log || echo "  0"
+
+          # CSV 헤더
+          echo "timestamp,action,file" > deploy_summary.csv
+
+          # 업로드된 파일들
+          while IFS= read -r line; do
+            file=$(echo "$line" | awk '{print $NF}')
+            echo "$(date -u +%Y-%m-%dT%H:%M:%SZ),uploaded,$file" >> deploy_summary.csv
+          done < <(grep -i "uploading" deploy.log)
+
+          # 스킵된 파일들
+          while IFS= read -r line; do
+            file=$(echo "$line" | awk '{print $NF}')
+            echo "$(date -u +%Y-%m-%dT%H:%M:%SZ),skipped,$file" >> deploy_summary.csv
+          done < <(grep -i "skipping" deploy.log)
+
+      # csv 로그 별도 저장
+      - name: Save deploy summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-summary
+          path: |
+            deploy.log            # 원본 로그
+            deploy_summary.csv    # CSV 요약
+
+      # 상세 로그를 artifact로 저장 (Actions 화면에서 다운로드 가능)
+      - name: Save deploy log
+        # if: always(): 이전 스텝이 실패해도 로그는 저장 (실패 시 디버깅 용도)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          # artifact 이름에 run_number를 붙여 매 실행마다 구분되게 저장
+          # 예: deploy-log-1, deploy-log-2, ...
+          name: deployment-package-${{ github.run_number }}
+          # 저장할 파일 경로 (여러 개 지정 가능)
+          # path 아래 라인들을 주석 해제하면 배포 시점의 스냅샷도 함께 저장됨
+          # 저장 가능한 파일 형식: 로그(.log/.txt), 설정(.json/.yaml), 스크립트(.py),
+          # 데이터(.csv), 이미지(.png), HTML/PDF 등 형식 무관 (GitHub이 자동 ZIP 압축)
+          path: |
+            deploy.log                    # 배포 로그
+            # bundle/databricks.yml       # 배포 시점의 설정 스냅샷
+            # bundle/resources/*.yml      # Job 정의 스냅샷
+            # bundle/src/*.py             # Python 스크립트 스냅샷
+          # 보관 기간 (기본 90일, 여기선 7일로 단축하여 저장 공간 절약)
+          retention-days: 7

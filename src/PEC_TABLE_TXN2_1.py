@@ -91,5 +91,6 @@ except Exception as e:
 
 # 260701 주석 추가(테스트)
 # 260703 주석 추가(테스트) + Last update dt test
+# 260706 주석 추가(테스트)
 finally:
     logging.info("=== Job End ===")
