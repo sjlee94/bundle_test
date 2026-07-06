@@ -70,29 +70,28 @@ jobs:
           echo "=== ⏭️ Skipped files (unchanged) ==="
           grep -ic "skipping" deploy.log || echo "  0"
 
+          # CSV 요약 생성
+          echo ""
+          echo "Creating deploy_summary.csv..."
+
           # CSV 헤더
           echo "timestamp,action,file" > deploy_summary.csv
 
-          # 업로드된 파일들
+          # 업로드된 파일 목록
           while IFS= read -r line; do
             file=$(echo "$line" | awk '{print $NF}')
             echo "$(date -u +%Y-%m-%dT%H:%M:%SZ),uploaded,$file" >> deploy_summary.csv
-          done < <(grep -i "uploading" deploy.log)
+          done < <(grep -i "uploading" deploy.log || true)
 
-          # 스킵된 파일들
+          # 스킵된 파일 목록
           while IFS= read -r line; do
             file=$(echo "$line" | awk '{print $NF}')
             echo "$(date -u +%Y-%m-%dT%H:%M:%SZ),skipped,$file" >> deploy_summary.csv
-          done < <(grep -i "skipping" deploy.log)
+          done < <(grep -i "skipping" deploy.log || true)
 
-      # csv 로그 별도 저장
-      - name: Save deploy summary
-        uses: actions/upload-artifact@v4
-        with:
-          name: deploy-summary
-          path: |
-            deploy.log            # 원본 로그
-            deploy_summary.csv    # CSV 요약
+          echo ""
+          echo "=== 📄 deploy_summary.csv ==="
+          cat deploy_summary.csv
 
       # 상세 로그를 artifact로 저장 (Actions 화면에서 다운로드 가능)
       - name: Save deploy log
@@ -109,6 +108,7 @@ jobs:
           # 데이터(.csv), 이미지(.png), HTML/PDF 등 형식 무관 (GitHub이 자동 ZIP 압축)
           path: |
             deploy.log                    # 배포 로그
+            deploy_summary.csv            # 배포 로그 csv 저장
             # bundle/databricks.yml       # 배포 시점의 설정 스냅샷
             # bundle/resources/*.yml      # Job 정의 스냅샷
             # bundle/src/*.py             # Python 스크립트 스냅샷
